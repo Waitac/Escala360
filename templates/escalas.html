@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Escalas - Escala360</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/escalas.css') }}" />
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('escala.mostrar_escalas') }}">Escalas</a>
+    <a href="{{ url_for('auth.logout') }}">Sair</a>
+  </div>
+
+  <div class="escalas-container">
+    <h1>Escalas</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Profissional</th>
+          <th>Data</th>
+          <th>Início</th>
+          <th>Fim</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for escala in escalas %}
+        <tr>
+          <td>{{ escala.profissional.nome }}</td>
+          <td>{{ escala.plantao.data.strftime('%d/%m/%Y') }}</td>
+          <td>{{ escala.plantao.hora_inicio.strftime('%H:%M') }}</td>
+          <td>{{ escala.plantao.hora_fim.strftime('%H:%M') }}</td>
+          <td>{{ escala.status }}</td>
+          <td>
+            {% if escala.status == 'pendente' %}
+              <a href="{{ url_for('escala.substituir_profissional', escala_id=escala.id) }}">Substituir</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

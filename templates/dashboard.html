@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - Escala360</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('escala.mostrar_escalas') }}">Escalas</a>
+    <a href="{{ url_for('auth.logout') }}">Sair</a>
+  </div>
+  <div class="dashboard-container">
+    <h1>Dashboard</h1>
+    <div class="stats">
+      <div class="stat-card">
+        <h2>{{ total_profissionais }}</h2>
+        <p>Profissionais Cadastrados</p>
+      </div>
+      <div class="stat-card">
+        <h2>{{ plantoes_ativos }}</h2>
+        <p>Plantões Ativos</p>
+      </div>
+      <div class="stat-card">
+        <h2>{{ substituicoes_pendentes }}</h2>
+        <p>Substituições Pendentes</p>
+      </div>
+    </div>
+<div class="filters-container">
+  <div class="filter-group">
+    <label for="yearSelect">Ano</label>
+    <select id="yearSelect" class="filter-select"></select>
+  </div>
+  <div class="filter-group">
+    <label for="monthSelect">Mês</label>
+    <select id="monthSelect" class="filter-select"></select>
+  </div>
+</div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+  <div style="background: white; padding: 20px; border-radius: 8px;">
+    <h3>Plantões por Semana</h3>
+    <canvas id="chartBar"></canvas>
+  </div>
+  <div style="background: white; padding: 20px; border-radius: 8px;">
+    <h3>Profissionais por Cargo</h3>
+    <canvas id="chartPie"></canvas>
+  </div>
+  </div>
+
+  <div style="background: white; padding: 20px; border-radius: 8px;">
+    <h3>Substituições no Mês</h3>
+    <canvas id="chartLine"></canvas>
+  </div>
+</div>
+<script>
+  let chartBar, chartPie, chartLine;
+  const ctxBar = document.getElementById('chartBar').getContext('2d');
+  const ctxPie = document.getElementById('chartPie').getContext('2d');
+  const ctxLine = document.getElementById('chartLine').getContext('2d');
+  const yearSelect = document.getElementById('yearSelect');
+  const monthSelect = document.getElementById('monthSelect');
+
+  function renderCharts(dataBar, dataPie, dataLine) {
+    if (chartBar) chartBar.destroy();
+    if (chartPie) chartPie.destroy();
+    if (chartLine) chartLine.destroy();
+
+    chartBar = new Chart(ctxBar, {
+      type: 'bar',
+      data: dataBar,
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true } } }
+    });
+
+    chartPie = new Chart(ctxPie, {
+      type: 'pie',
+      data: dataPie,
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true } } }
+    });
+
+    chartLine = new Chart(ctxLine, {
+      type: 'line',
+      data: dataLine,
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true } } }
+    });
+  }
+
+  function fetchAndRenderCharts() {
+    const ano = yearSelect.value;
+    const mes = monthSelect.value;
+    if (ano && mes) {
+      fetch(`/api/dashboard-data?ano=${ano}&mes=${mes}`)
+        .then(response => response.json())
+        .then(json => {
+          const dataBar = {
+            labels: json.barra.labels,
+            datasets: [{ label: 'Plantões ativos', data: json.barra.data, backgroundColor: 'rgba(54, 162, 235, 0.7)' }]
+          };
+          const dataPie = {
+            labels: json.pizza.labels,
+            datasets: [{ label: 'Profissionais por cargo', data: json.pizza.data, backgroundColor: ['rgba(255,99,132,0.7)','rgba(54,162,235,0.7)','rgba(255,206,86,0.7)'] }]
+          };
+          const dataLine = {
+            labels: json.linha.labels,
+            datasets: [{
+              label: 'Substituições no mês',
+              data: json.linha.data,
+              fill: false,
+              borderColor: 'rgba(153, 102, 255, 0.7)',
+              tension: 0.1
+            }]
+          };
+          renderCharts(dataBar, dataPie, dataLine);
+        }).catch(err => console.error('Erro ao buscar dados dashboard:', err));
+    }
+  }
+
+  fetch('/api/available-periods')
+    .then(resp => resp.json())
+    .then(periodos => {
+      if (!periodos.length) return;
+      const anos = [...new Set(periodos.map(p => p.ano))];
+      const mesesPorAno = {};
+      periodos.forEach(p => {
+        if (!mesesPorAno[p.ano]) mesesPorAno[p.ano] = [];
+        if (!mesesPorAno[p.ano].includes(p.mes)) mesesPorAno[p.ano].push(p.mes);
+      });
+
+      yearSelect.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+      function atualizarMeses() {
+        const meses = mesesPorAno[yearSelect.value];
+        monthSelect.innerHTML = meses.map(m =>
+          `<option value="${m}">${new Date(0,m-1).toLocaleString('pt-BR',{month:'long'})}</option>`
+        ).join('');
+        monthSelect.value = meses[0];
+        fetchAndRenderCharts();
+      }
+      yearSelect.onchange = atualizarMeses;
+      yearSelect.value = anos[0];
+      atualizarMeses();
+      monthSelect.onchange = fetchAndRenderCharts;
+    });
+</script>
+
+</body>
+</html>

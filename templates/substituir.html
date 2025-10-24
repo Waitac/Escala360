@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Substituir Profissional - Escala360</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/substituir.css') }}" />
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('escala.mostrar_escalas') }}">Escalas</a>
+    <a href="{{ url_for('auth.logout') }}">Sair</a>
+  </div>
+
+  <div class="substituir-container">
+    <div class="page-header">
+      <h1>Substituir Profissional</h1>
+      <p class="subtitle">Selecione um substituto disponível para o plantão</p>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="card-icon">📅</div>
+        <div class="card-content">
+          <h3>Data do Plantão</h3>
+          <p class="highlight">{{ escala.plantao.data.strftime('%d/%m/%Y') }}</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-icon">⏰</div>
+        <div class="card-content">
+          <h3>Horário</h3>
+          <p class="highlight">{{ escala.plantao.hora_inicio.strftime('%H:%M') }} - {{ escala.plantao.hora_fim.strftime('%H:%M') }}</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-icon">👤</div>
+        <div class="card-content">
+          <h3>Profissional Atual</h3>
+          <p class="highlight">{{ escala.profissional.nome }}</p>
+          <p class="subtitle-small">{{ escala.profissional.cargo }}</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-icon">✓</div>
+        <div class="card-content">
+          <h3>Substitutos Disponíveis</h3>
+          <p class="highlight">{{ substitutos|length }} profissionais</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Selecione o Substituto</h2>
+      
+      {% if substitutos %}
+        <form method="POST" action="{{ url_for('escala.substituir_profissional', escala_id=escala.id) }}">
+          <div class="form-group">
+            <label for="substituto_id">Profissional Substituto</label>
+            <select name="substituto_id" id="substituto_id" class="form-select" required>
+              <option value="">-- Selecione um profissional --</option>
+              {% for substituto in substitutos %}
+                <option value="{{ substituto.id }}">
+                  {{ substituto.nome }} - {{ substituto.cargo }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Confirmar Substituição</button>
+            <a href="{{ url_for('escala.mostrar_escalas') }}" class="btn btn-secondary">Cancelar</a>
+          </div>
+        </form>
+      {% else %}
+        <div class="alert alert-warning">
+          <strong>⚠ Atenção:</strong> Não há profissionais disponíveis para substituição neste horário.
+        </div>
+        <div class="form-actions">
+          <a href="{{ url_for('escala.mostrar_escalas') }}" class="btn btn-secondary">Voltar</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
